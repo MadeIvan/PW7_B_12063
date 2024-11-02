@@ -13,7 +13,8 @@ class Bookings extends Model
         'id_book','class','price',
     ];
 
+
     public function book(){
-    return $this->belongsto(book::class, ' id_book'); 
+    return $this->belongsto(book::class, 'id_book'); 
     }
 }

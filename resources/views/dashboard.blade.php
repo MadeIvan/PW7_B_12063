@@ -70,6 +70,13 @@
                                 <p> Bookings</p>
                             </a> 
                         </li>
+                        <li class="nav-item"> 
+                            <a href="{{ url('customer') }}" 
+                                class="nav-link"> 
+                                <i class="fas fa-user-alt"></i> 
+                                <p> Customer</p>
+                            </a> 
+                        </li>
                         </ul> 
                 </nav> 
             <!-- /.sidebar-menu --> 

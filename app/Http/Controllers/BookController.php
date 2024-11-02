@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 use Exception;
 use Illuminate\Http\Request;
 use App\Models\Book;
+use Faker\Core\File;
+use Laravel\Pail\Files;
 use SebastianBergmann\Type\VoidType;
 
 class BookController extends Controller
@@ -13,6 +15,8 @@ class BookController extends Controller
  *  @return void
  */
     
+
+
     public function index(){
 
     $book = Book::latest()->paginate(5);
@@ -35,23 +39,37 @@ class BookController extends Controller
 * @return void
 */
 public function store(Request $request){
-//Validasi Formulir
-    $request->validate($request, [
-        'title' => 'required',
-        'author' => 'required',
-        'pages' => 'required'
-    ]);
-//Fungsi Simpan Data ke dalam Database
-    Book::create([
-        'title' => $request->title,
-        'author' => $request->author,
-        'pages' => $request->pages
-    ]);
-    try {
-        return redirect()->route('book.index');
-    } catch (Exception $e) {
-        return redirect()->route('book.index');
-    }
+  // Validate the form input
+$request->validate([
+    'title' => 'required',
+    'author' => 'required',
+    'pages' => 'required',
+    'poster' => 'nullable|image' // Ensure the image is validated if provided
+]);
+
+// Handle the image upload
+if ($request->hasFile('poster')) {
+    $poster = $request->file('poster');
+    $posterName = time() . '_' . $poster->getClientOriginalName(); 
+    $poster->move(public_path('public/image'), $posterName); 
+    $imagePath = 'public/image/' . $posterName;
+} else {
+    $imagePath = null; 
+}
+
+// Save the data to the database
+Book::create([
+    'title' => $request->title,
+    'author' => $request->author,
+    'pages' => $request->pages,
+    'poster' => $imagePath,
+]);
+
+try {
+    return redirect()->route('book.index')->with('success', 'Book created successfully!');
+} catch (Exception $e) {
+    return redirect()->route('book.index')->with('error', 'An error occurred while processing.');
+}
 }
 /**
 * edit  
@@ -72,19 +90,42 @@ public function edit($id){
 */
 public function update(Request $request, $id){
     $book = Book::find($id);
-//validate form
-    $request->validate($request, [
-        'title' => 'required',
-        'author' => 'required',
-        'pages' => 'required'
+    if (!$book) {
+        return redirect()->route('book.index')->with('error', 'Book not found.');
+    }
+
+    // Validate the form input
+    $request->validate([
+        'title' => 'nullable',
+        'author' => 'nullable',
+        'pages' => 'nullable',
+        'poster' => 'nullable|image'
     ]);
-    $book->update([
-        'title' => $request->title,
-        'author' => $request->author,
-        'pages' => $request->pages
-    ]);
-    return redirect()->route('book.index')->with(['success' => 'Data
-    Berhasil Diubah!']);
+
+    // Update the book properties if the input is provided
+    if ($request->filled('title')) {
+        $book->title = $request->title;
+    }
+    if ($request->filled('author')) {
+        $book->author = $request->author;
+    }
+    if ($request->filled('pages')) {
+        $book->pages = $request->pages;
+    }
+
+    // Handle the poster update
+    if ($request->hasFile('poster')) {
+        $poster = $request->file('poster');
+        $posterName = $poster->getClientOriginalName();
+        $poster->move(public_path('public/image'), $posterName);
+        $posterPath = 'public/image/' . $posterName;
+
+        $book->poster = $posterPath;
+    }
+
+    $book->save();
+
+    return redirect()->route('book.index')->with('success', 'Data Berhasil Diubah!');
 }
 /**
 * destroy
